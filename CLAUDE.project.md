@@ -2,7 +2,7 @@
 
 ## What This Is
 
-WordPress plugin that manages user roles based on Easy Digital Downloads subscription status. Assigns a configurable role on purchase, downgrades when subscriptions expire.
+WordPress plugin that manages user roles based on Easy Digital Downloads purchase status. Supports both EDD Recurring subscriptions and EDD All Access passes. Adds a configurable role on purchase, removes it when all qualifying access expires.
 
 ## Key Files
 
@@ -19,6 +19,7 @@ WordPress plugin that manages user roles based on Easy Digital Downloads subscri
 - WordPress 5.0+
 - Easy Digital Downloads (required)
 - EDD Recurring Payments (required)
+- EDD All Access (optional, supported)
 - Plugin Update Checker (via Composer)
 
 ## Code Standards
@@ -34,7 +35,7 @@ WordPress plugin that manages user roles based on Easy Digital Downloads subscri
 - Settings form uses nonces
 - All input sanitized before use
 - All output escaped before display
-- Role validated against allowed list before `set_role()` call
+- Role validated against allowed list before assignment
 
 ## Settings Storage
 
@@ -42,9 +43,8 @@ Option name: `edd_rm_settings`
 
 ```php
 array(
-    'qualifying_products' => array( 123, 456 ),  // EDD product IDs
-    'grant_role'          => 'member',           // Role on purchase
-    'downgrade_role'      => 'subscriber',       // Role on expiration
+    'qualifying_products' => array( 123, 456 ),  // EDD product IDs (subscriptions or All Access)
+    'grant_role'          => 'member',           // Role added on purchase, removed on expiration
 )
 ```
 
@@ -52,8 +52,15 @@ array(
 
 | Hook | When | Action |
 |------|------|--------|
-| `edd_complete_purchase` | Payment confirmed | Grant role if qualifying product |
-| `edd_subscription_expired` | Subscription period ends | Downgrade if no other qualifying subs |
+| `edd_complete_purchase` | Payment confirmed | Add role if qualifying product |
+| `edd_subscription_expired` | Subscription ends | Remove role if no other qualifying access |
+| `edd_all_access_expired` | All Access pass ends | Remove role if no other qualifying access |
+
+## Role Behavior
+
+- **On purchase:** Role is ADDED (user keeps existing roles)
+- **On expiration:** Role is REMOVED (only if no other qualifying subscriptions or All Access passes remain)
+- Uses `WP_User::add_role()` and `WP_User::remove_role()`
 
 ## Excluded Roles
 
@@ -67,23 +74,20 @@ These roles cannot be selected in settings (prevents privilege escalation):
 
 ```bash
 # Install dependencies
-composer install
+cd plugin && composer install
 
 # Run code analysis
-./dev-tools/analyze.sh
-
-# Or individually
-composer phpcs
-composer phpstan
+./plugin/vendor/bin/phpcs --standard=WordPress plugin/includes plugin/admin
+./plugin/vendor/bin/phpstan analyse --configuration=dev-tools/phpstan.neon
 ```
 
 ## Release Process
 
-1. Update version in `plugin/edd-role-manager.php`
+1. Update version in `plugin/edd-role-manager.php` (header + constant)
 2. Update CHANGELOG.md
 3. Commit changes
-4. Run GitHub Actions workflow (manual dispatch)
-5. Workflow creates release with zip attachment
+4. Tag: `git tag v1.x.x && git push origin main --tags`
+5. Trigger GitHub Actions workflow: `gh workflow run release.yml -f version=1.x.x`
 
 ## Linear Project
 
