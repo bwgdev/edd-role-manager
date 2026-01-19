@@ -27,9 +27,9 @@ jobs:
 
       - name: Create release zip
         run: |
-          cd plugin
-          zip -r ../edd-role-manager.zip . -x "*.DS_Store" -x "*.git*"
-          cd ..
+          mkdir edd-role-manager
+          cp -r plugin/* edd-role-manager/
+          zip -r edd-role-manager.zip edd-role-manager -x "*.DS_Store" -x "*.git*"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
