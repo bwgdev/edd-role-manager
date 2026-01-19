@@ -52,7 +52,6 @@ function edd_rm_register_settings(): void {
 			'default'           => array(
 				'qualifying_products' => array(),
 				'grant_role'          => 'subscriber',
-				'downgrade_role'      => 'subscriber',
 			),
 		)
 	);
@@ -67,13 +66,12 @@ add_action( 'admin_init', 'edd_rm_register_settings' );
  * Sanitize settings on save.
  *
  * @param mixed $input The input to sanitize.
- * @return array{qualifying_products: int[], grant_role: string, downgrade_role: string}
+ * @return array{qualifying_products: int[], grant_role: string}
  */
 function edd_rm_sanitize_settings( $input ): array {
 	$sanitized = array(
 		'qualifying_products' => array(),
 		'grant_role'          => 'subscriber',
-		'downgrade_role'      => 'subscriber',
 	);
 
 	if ( ! is_array( $input ) ) {
@@ -95,14 +93,6 @@ function edd_rm_sanitize_settings( $input ): array {
 		$grant_role = sanitize_text_field( $input['grant_role'] );
 		if ( edd_rm_is_role_allowed( $grant_role ) && edd_rm_role_exists( $grant_role ) ) {
 			$sanitized['grant_role'] = $grant_role;
-		}
-	}
-
-	// Sanitize and validate downgrade role.
-	if ( isset( $input['downgrade_role'] ) ) {
-		$downgrade_role = sanitize_text_field( $input['downgrade_role'] );
-		if ( edd_rm_is_role_allowed( $downgrade_role ) && edd_rm_role_exists( $downgrade_role ) ) {
-			$sanitized['downgrade_role'] = $downgrade_role;
 		}
 	}
 
@@ -331,35 +321,7 @@ function edd_rm_render_settings_page(): void {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">
-								<?php esc_html_e( 'Role assigned when a user purchases a qualifying product.', 'edd-role-manager' ); ?>
-							</p>
-						</td>
-					</tr>
-
-					<!-- Downgrade Role -->
-					<tr>
-						<th scope="row">
-							<label for="edd_rm_downgrade_role">
-								<?php esc_html_e( 'Downgrade Role', 'edd-role-manager' ); ?>
-							</label>
-						</th>
-						<td>
-							<select
-								name="edd_rm_settings[downgrade_role]"
-								id="edd_rm_downgrade_role"
-								class="regular-text"
-							>
-								<?php foreach ( $assignable_roles as $slug => $name ) : ?>
-									<option
-										value="<?php echo esc_attr( $slug ); ?>"
-										<?php selected( $settings['downgrade_role'], $slug ); ?>
-									>
-										<?php echo esc_html( $name ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-							<p class="description">
-								<?php esc_html_e( 'Role assigned when a user has no remaining active qualifying subscriptions or All Access passes.', 'edd-role-manager' ); ?>
+								<?php esc_html_e( 'Role added when a user purchases a qualifying product. This role is removed when all qualifying subscriptions and All Access passes expire.', 'edd-role-manager' ); ?>
 							</p>
 						</td>
 					</tr>

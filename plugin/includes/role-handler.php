@@ -19,13 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Get plugin settings.
  *
- * @return array{qualifying_products: int[], grant_role: string, downgrade_role: string}
+ * @return array{qualifying_products: int[], grant_role: string}
  */
 function edd_rm_get_settings(): array {
 	$defaults = array(
 		'qualifying_products' => array(),
 		'grant_role'          => 'subscriber',
-		'downgrade_role'      => 'subscriber',
 	);
 
 	$settings = get_option( 'edd_rm_settings', $defaults );
@@ -115,9 +114,9 @@ function edd_rm_handle_purchase( int $payment_id ): void {
 		return;
 	}
 
-	// Assign the role.
+	// Add the role (keeps existing roles).
 	$wp_user = new WP_User( $user_id );
-	$wp_user->set_role( $grant_role );
+	$wp_user->add_role( $grant_role );
 }
 add_action( 'edd_complete_purchase', 'edd_rm_handle_purchase', 100, 1 );
 
@@ -152,8 +151,8 @@ function edd_rm_handle_subscription_expiration( int $sub_id, $subscription ): vo
 		return;
 	}
 
-	// Downgrade the user.
-	edd_rm_downgrade_user( $user_id );
+	// Remove the granted role.
+	edd_rm_remove_granted_role( $user_id );
 }
 add_action( 'edd_subscription_expired', 'edd_rm_handle_subscription_expiration', 100, 2 );
 
@@ -194,24 +193,24 @@ function edd_rm_handle_all_access_expiration( $pass, array $args ): void {
 		return;
 	}
 
-	// Downgrade the user.
-	edd_rm_downgrade_user( $user_id );
+	// Remove the granted role.
+	edd_rm_remove_granted_role( $user_id );
 }
 add_action( 'edd_all_access_expired', 'edd_rm_handle_all_access_expiration', 100, 2 );
 
 /**
- * Downgrade a user to the configured downgrade role.
+ * Remove the granted role from a user.
  *
- * @param int $user_id The user ID to downgrade.
+ * @param int $user_id The user ID to remove role from.
  * @return void
  */
-function edd_rm_downgrade_user( int $user_id ): void {
+function edd_rm_remove_granted_role( int $user_id ): void {
 	$settings = edd_rm_get_settings();
 
-	// Validate role before assignment (defense in depth).
-	$downgrade_role = $settings['downgrade_role'];
+	// Get the role to remove.
+	$grant_role = $settings['grant_role'];
 
-	if ( ! edd_rm_is_role_allowed( $downgrade_role ) ) {
+	if ( ! edd_rm_is_role_allowed( $grant_role ) ) {
 		return;
 	}
 
@@ -222,9 +221,9 @@ function edd_rm_downgrade_user( int $user_id ): void {
 		return;
 	}
 
-	// Assign the downgrade role.
+	// Remove the granted role (keeps other roles).
 	$wp_user = new WP_User( $user_id );
-	$wp_user->set_role( $downgrade_role );
+	$wp_user->remove_role( $grant_role );
 }
 
 /**

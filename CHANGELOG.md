@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-01-19
+
+### Changed
+- Role is now ADDED on purchase instead of replacing existing roles
+- Role is now REMOVED on expiration instead of setting a downgrade role
+- Users keep all their existing roles; only the granted role is added/removed
+- Removed "Downgrade Role" setting (no longer needed)
+
 ## [1.1.0] - 2026-01-19
 
 ### Added
