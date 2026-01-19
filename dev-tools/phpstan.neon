@@ -22,3 +22,4 @@ parameters:
         # Defensive null coalescing for external data - stubs say properties exist but real data may vary
         - "#Offset 'id' on array\\{id: int.*always exists#"
         - '#Property EDD_Subscription::\$product_id.*on left side of \?\? is not nullable#'
+        - '#Property EDD_All_Access_Pass::\$.*on left side of \?\? is not nullable#'

@@ -3,7 +3,7 @@
  * Plugin Name: Role Manager for Easy Digital Downloads
  * Plugin URI: https://github.com/bwgdev/edd-role-manager
  * Description: Automatically manages user roles based on EDD subscription status.
- * Version: 1.0.2
+ * Version: 1.1.0
  * Requires at least: 5.0
  * Requires PHP: 8.0
  * Author: Boston Web Group
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // PLUGIN CONSTANTS
 // =============================================================================
 
-define( 'EDD_RM_VERSION', '1.0.2' );
+define( 'EDD_RM_VERSION', '1.1.0' );
 define( 'EDD_RM_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'EDD_RM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'EDD_RM_PLUGIN_FILE', __FILE__ );

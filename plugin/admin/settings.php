@@ -83,10 +83,10 @@ function edd_rm_sanitize_settings( $input ): array {
 	// Sanitize qualifying products.
 	if ( isset( $input['qualifying_products'] ) && is_array( $input['qualifying_products'] ) ) {
 		$product_ids = array_map( 'absint', $input['qualifying_products'] );
-		// Validate each product exists and is a subscription product.
+		// Validate each product exists and is a qualifying product.
 		$sanitized['qualifying_products'] = array_filter(
 			$product_ids,
-			'edd_rm_is_valid_subscription_product'
+			'edd_rm_is_valid_qualifying_product'
 		);
 	}
 
@@ -110,12 +110,12 @@ function edd_rm_sanitize_settings( $input ): array {
 }
 
 /**
- * Check if a product ID is a valid EDD subscription product.
+ * Check if a product ID is a valid qualifying product (subscription or All Access).
  *
  * @param int $product_id Product ID to check.
- * @return bool True if valid subscription product.
+ * @return bool True if valid qualifying product.
  */
-function edd_rm_is_valid_subscription_product( int $product_id ): bool {
+function edd_rm_is_valid_qualifying_product( int $product_id ): bool {
 	if ( $product_id <= 0 ) {
 		return false;
 	}
@@ -126,8 +126,8 @@ function edd_rm_is_valid_subscription_product( int $product_id ): bool {
 		return false;
 	}
 
-	// Check if it's a recurring product.
-	return edd_rm_is_recurring_product( $product_id );
+	// Check if it's a recurring product or All Access product.
+	return edd_rm_is_recurring_product( $product_id ) || edd_rm_is_all_access_product( $product_id );
 }
 
 /**
@@ -146,11 +146,11 @@ function edd_rm_role_exists( string $role ): bool {
 // =============================================================================
 
 /**
- * Get subscription products for the multi-select.
+ * Get qualifying products (subscriptions and All Access) for the multi-select.
  *
  * @return array<int, string> Array of product ID => product title.
  */
-function edd_rm_get_subscription_products(): array {
+function edd_rm_get_qualifying_products(): array {
 	$products = array();
 
 	$args = array(
@@ -165,7 +165,7 @@ function edd_rm_get_subscription_products(): array {
 
 	if ( $query->have_posts() ) {
 		foreach ( $query->posts as $post ) {
-			if ( edd_rm_is_recurring_product( $post->ID ) ) {
+			if ( edd_rm_is_recurring_product( $post->ID ) || edd_rm_is_all_access_product( $post->ID ) ) {
 				$products[ $post->ID ] = $post->post_title;
 			}
 		}
@@ -206,6 +206,24 @@ function edd_rm_is_recurring_product( int $product_id ): bool {
 }
 
 /**
+ * Check if a product is an All Access product.
+ *
+ * @param int $product_id The product ID to check.
+ * @return bool True if product is All Access type.
+ */
+function edd_rm_is_all_access_product( int $product_id ): bool {
+	// Check if EDD All Access is active.
+	if ( ! function_exists( 'edd_all_access' ) ) {
+		return false;
+	}
+
+	// Check if product type is all_access.
+	$product_type = get_post_meta( $product_id, '_edd_product_type', true );
+
+	return 'all_access' === $product_type;
+}
+
+/**
  * Get assignable roles (excludes admin/editor/author/contributor).
  *
  * @return array<string, string> Array of role slug => role display name.
@@ -239,18 +257,18 @@ function edd_rm_render_settings_page(): void {
 		wp_die( esc_html__( 'You do not have permission to access this page.', 'edd-role-manager' ) );
 	}
 
-	$settings              = edd_rm_get_settings();
-	$subscription_products = edd_rm_get_subscription_products();
-	$assignable_roles      = edd_rm_get_assignable_roles();
+	$settings            = edd_rm_get_settings();
+	$qualifying_products = edd_rm_get_qualifying_products();
+	$assignable_roles    = edd_rm_get_assignable_roles();
 
 	?>
 	<div class="wrap">
 		<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
-		<?php if ( empty( $subscription_products ) ) : ?>
+		<?php if ( empty( $qualifying_products ) ) : ?>
 			<div class="notice notice-warning">
 				<p>
-					<?php esc_html_e( 'No subscription products found. Please create at least one EDD product with recurring payments enabled.', 'edd-role-manager' ); ?>
+					<?php esc_html_e( 'No qualifying products found. Please create at least one EDD subscription product or All Access product.', 'edd-role-manager' ); ?>
 				</p>
 			</div>
 		<?php endif; ?>
@@ -275,7 +293,7 @@ function edd_rm_render_settings_page(): void {
 								class="regular-text"
 								style="min-width: 350px; min-height: 150px;"
 							>
-								<?php foreach ( $subscription_products as $id => $title ) : ?>
+								<?php foreach ( $qualifying_products as $id => $title ) : ?>
 									<option
 										value="<?php echo esc_attr( (string) $id ); ?>"
 										<?php echo in_array( $id, $settings['qualifying_products'], true ) ? 'selected' : ''; ?>
@@ -285,7 +303,7 @@ function edd_rm_render_settings_page(): void {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">
-								<?php esc_html_e( 'Select subscription products that grant the elevated role. Hold Ctrl/Cmd to select multiple.', 'edd-role-manager' ); ?>
+								<?php esc_html_e( 'Select subscription or All Access products that grant the elevated role. Hold Ctrl/Cmd to select multiple.', 'edd-role-manager' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -313,7 +331,7 @@ function edd_rm_render_settings_page(): void {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">
-								<?php esc_html_e( 'Role assigned when a user purchases a qualifying subscription.', 'edd-role-manager' ); ?>
+								<?php esc_html_e( 'Role assigned when a user purchases a qualifying product.', 'edd-role-manager' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -341,7 +359,7 @@ function edd_rm_render_settings_page(): void {
 								<?php endforeach; ?>
 							</select>
 							<p class="description">
-								<?php esc_html_e( 'Role assigned when a user has no remaining active qualifying subscriptions.', 'edd-role-manager' ); ?>
+								<?php esc_html_e( 'Role assigned when a user has no remaining active qualifying subscriptions or All Access passes.', 'edd-role-manager' ); ?>
 							</p>
 						</td>
 					</tr>

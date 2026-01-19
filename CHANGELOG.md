@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-01-19
+
+### Added
+- Support for EDD All Access products as qualifying products
+- Role granted on purchase of qualifying All Access passes
+- Role downgraded when All Access pass expires (if no other qualifying access remains)
+- Combined "Qualifying Products" selector shows both subscription and All Access products
+
+### Changed
+- Renamed internal functions to reflect broader scope (subscriptions + All Access)
+- Updated admin UI text to reference both subscriptions and All Access passes
+
 ## [1.0.2] - 2026-01-19
 
 ### Fixed
