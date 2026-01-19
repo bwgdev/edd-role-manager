@@ -127,12 +127,7 @@ function edd_rm_is_valid_subscription_product( int $product_id ): bool {
 	}
 
 	// Check if it's a recurring product.
-	if ( function_exists( 'edd_recurring' ) ) {
-		$is_recurring = get_post_meta( $product_id, 'edd_recurring', true );
-		return ! empty( $is_recurring ) && 'yes' === $is_recurring;
-	}
-
-	return true;
+	return edd_rm_is_recurring_product( $product_id );
 }
 
 /**
@@ -164,26 +159,50 @@ function edd_rm_get_subscription_products(): array {
 		'post_status'    => 'publish',
 		'orderby'        => 'title',
 		'order'          => 'ASC',
-		'meta_query'     => array(
-			array(
-				'key'     => 'edd_recurring',
-				'value'   => 'yes',
-				'compare' => '=',
-			),
-		),
 	);
 
 	$query = new WP_Query( $args );
 
 	if ( $query->have_posts() ) {
 		foreach ( $query->posts as $post ) {
-			$products[ $post->ID ] = $post->post_title;
+			if ( edd_rm_is_recurring_product( $post->ID ) ) {
+				$products[ $post->ID ] = $post->post_title;
+			}
 		}
 	}
 
 	wp_reset_postdata();
 
 	return $products;
+}
+
+/**
+ * Check if a product has any recurring price options.
+ *
+ * @param int $product_id The product ID to check.
+ * @return bool True if product has recurring options.
+ */
+function edd_rm_is_recurring_product( int $product_id ): bool {
+	// Check variable prices for recurring options.
+	if ( function_exists( 'edd_get_variable_prices' ) ) {
+		$prices = edd_get_variable_prices( $product_id );
+
+		if ( ! empty( $prices ) && is_array( $prices ) ) {
+			foreach ( $prices as $price ) {
+				if ( isset( $price['recurring'] ) && 'yes' === $price['recurring'] ) {
+					return true;
+				}
+			}
+		}
+	}
+
+	// Fallback: check top-level meta for simple recurring products.
+	$recurring = get_post_meta( $product_id, 'edd_recurring', true );
+	if ( 'yes' === $recurring ) {
+		return true;
+	}
+
+	return false;
 }
 
 /**
