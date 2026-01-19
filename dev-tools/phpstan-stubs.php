@@ -7,7 +7,21 @@
  * @package EDD_Role_Manager
  */
 
-// Prevent direct execution.
+// Plugin constants - define first before ABSPATH check.
+if ( ! defined( 'EDD_RM_VERSION' ) ) {
+	define( 'EDD_RM_VERSION', '1.0.0' );
+}
+if ( ! defined( 'EDD_RM_PLUGIN_DIR' ) ) {
+	define( 'EDD_RM_PLUGIN_DIR', '' );
+}
+if ( ! defined( 'EDD_RM_PLUGIN_URL' ) ) {
+	define( 'EDD_RM_PLUGIN_URL', '' );
+}
+if ( ! defined( 'EDD_RM_PLUGIN_FILE' ) ) {
+	define( 'EDD_RM_PLUGIN_FILE', '' );
+}
+
+// Prevent further stub definitions if running in WordPress context.
 if ( defined( 'ABSPATH' ) ) {
 	return;
 }

@@ -258,7 +258,7 @@ function edd_rm_render_settings_page(): void {
 							>
 								<?php foreach ( $subscription_products as $id => $title ) : ?>
 									<option
-										value="<?php echo esc_attr( $id ); ?>"
+										value="<?php echo esc_attr( (string) $id ); ?>"
 										<?php echo in_array( $id, $settings['qualifying_products'], true ) ? 'selected' : ''; ?>
 									>
 										<?php echo esc_html( $title ); ?>

@@ -1,6 +1,5 @@
 # Composer
 plugin/vendor/
-composer.lock
 
 # OS files
 .DS_Store

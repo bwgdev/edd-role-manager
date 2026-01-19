@@ -13,12 +13,12 @@ parameters:
     bootstrapFiles:
         - phpstan-stubs.php
 
+    scanFiles:
+        - ../plugin/edd-role-manager.php
+
     ignoreErrors:
-        # EDD classes are not available during static analysis
-        - '#Class EDD_Subscription not found#'
-        - '#Class EDD_Recurring_Subscriber not found#'
-        - '#Class Easy_Digital_Downloads not found#'
-        - '#Class EDD_Recurring not found#'
-        - '#Function edd_get_payment_user_id not found#'
-        - '#Function edd_get_payment_meta_cart_details not found#'
-        - '#Function edd_recurring not found#'
+        # Plugin Update Checker uses traits that PHPStan doesn't resolve well
+        - '#Call to an undefined method YahnisElsts\\PluginUpdateChecker\\v5p6\\Vcs\\Api::enableReleaseAssets#'
+        # Defensive null coalescing for external data - stubs say properties exist but real data may vary
+        - "#Offset 'id' on array\\{id: int.*always exists#"
+        - '#Property EDD_Subscription::\$product_id.*on left side of \?\? is not nullable#'

@@ -89,7 +89,7 @@ function edd_rm_handle_purchase( int $payment_id ): void {
 	$has_qualifying_product = false;
 
 	foreach ( $cart_items as $item ) {
-		$product_id = isset( $item['id'] ) ? absint( $item['id'] ) : 0;
+		$product_id = absint( $item['id'] ?? 0 );
 
 		if ( in_array( $product_id, $settings['qualifying_products'], true ) ) {
 			$has_qualifying_product = true;
@@ -128,8 +128,8 @@ add_action( 'edd_complete_purchase', 'edd_rm_handle_purchase', 100, 1 );
 /**
  * Handle role downgrade on subscription expiration.
  *
- * @param int                 $sub_id       The subscription ID.
- * @param EDD_Subscription    $subscription The subscription object.
+ * @param int              $sub_id       The subscription ID.
+ * @param EDD_Subscription $subscription The subscription object.
  * @return void
  */
 function edd_rm_handle_expiration( int $sub_id, $subscription ): void {
@@ -141,9 +141,9 @@ function edd_rm_handle_expiration( int $sub_id, $subscription ): void {
 	}
 
 	// Get user ID from subscription.
-	$user_id = isset( $subscription->customer->user_id ) ? absint( $subscription->customer->user_id ) : 0;
+	$user_id = absint( $subscription->customer->user_id ?? 0 );
 
-	if ( ! $user_id || $user_id <= 0 ) {
+	if ( ! $user_id ) {
 		return;
 	}
 
@@ -213,7 +213,7 @@ function edd_rm_user_has_qualifying_subscription( int $user_id, int $exclude_sub
 			continue;
 		}
 
-		$product_id = isset( $sub->product_id ) ? absint( $sub->product_id ) : 0;
+		$product_id = absint( $sub->product_id ?? 0 );
 
 		if ( in_array( $product_id, $settings['qualifying_products'], true ) ) {
 			return true;
