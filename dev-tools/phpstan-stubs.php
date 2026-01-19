@@ -185,8 +185,10 @@ function edd_all_access_user_has_pass( int $user_id, int $download_id, int $pric
 /**
  * Get customer's All Access passes.
  *
+ * Note: Despite the class existing, this function returns arrays, not objects.
+ *
  * @param object $customer EDD Customer object.
- * @return EDD_All_Access_Pass[]
+ * @return array<int, array{payment_id: int, download_id: int, price_id: int}>
  */
 function edd_all_access_get_customer_passes( $customer ): array {
 	return array();

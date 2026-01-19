@@ -189,7 +189,8 @@ function edd_rm_handle_all_access_expiration( $pass, array $args ): void {
 	}
 
 	// Check if user has any OTHER active qualifying access (subscriptions or All Access passes).
-	if ( edd_rm_user_has_qualifying_access( $user_id, 0, $pass->id ?? 0 ) ) {
+	// Pass the payment_id to exclude this specific pass from the check.
+	if ( edd_rm_user_has_qualifying_access( $user_id, 0, $payment_id ) ) {
 		return;
 	}
 
@@ -229,12 +230,12 @@ function edd_rm_remove_granted_role( int $user_id ): void {
 /**
  * Check if user has any active qualifying access (subscriptions or All Access passes).
  *
- * @param int $user_id         The user ID to check.
- * @param int $exclude_sub_id  Subscription ID to exclude from check (the one that just expired).
- * @param int $exclude_pass_id All Access pass ID to exclude from check (the one that just expired).
+ * @param int $user_id             The user ID to check.
+ * @param int $exclude_sub_id      Subscription ID to exclude from check (the one that just expired).
+ * @param int $exclude_payment_id  Payment ID to exclude from All Access check (the pass that just expired).
  * @return bool True if user has other qualifying active access.
  */
-function edd_rm_user_has_qualifying_access( int $user_id, int $exclude_sub_id = 0, int $exclude_pass_id = 0 ): bool {
+function edd_rm_user_has_qualifying_access( int $user_id, int $exclude_sub_id = 0, int $exclude_payment_id = 0 ): bool {
 	$settings = edd_rm_get_settings();
 
 	if ( empty( $settings['qualifying_products'] ) ) {
@@ -247,7 +248,7 @@ function edd_rm_user_has_qualifying_access( int $user_id, int $exclude_sub_id = 
 	}
 
 	// Check for active All Access passes to qualifying products.
-	if ( edd_rm_user_has_qualifying_all_access( $user_id, $exclude_pass_id ) ) {
+	if ( edd_rm_user_has_qualifying_all_access( $user_id, $exclude_payment_id ) ) {
 		return true;
 	}
 
@@ -306,11 +307,11 @@ function edd_rm_user_has_qualifying_subscription( int $user_id, int $exclude_sub
 /**
  * Check if user has any active All Access passes to qualifying products.
  *
- * @param int $user_id         The user ID to check.
- * @param int $exclude_pass_id Pass ID to exclude from check (the one that just expired).
+ * @param int $user_id            The user ID to check.
+ * @param int $exclude_payment_id Payment ID to exclude from check (the pass that just expired).
  * @return bool True if user has qualifying active All Access passes.
  */
-function edd_rm_user_has_qualifying_all_access( int $user_id, int $exclude_pass_id = 0 ): bool {
+function edd_rm_user_has_qualifying_all_access( int $user_id, int $exclude_payment_id = 0 ): bool {
 	$settings = edd_rm_get_settings();
 
 	if ( empty( $settings['qualifying_products'] ) ) {
@@ -326,10 +327,10 @@ function edd_rm_user_has_qualifying_all_access( int $user_id, int $exclude_pass_
 	foreach ( $settings['qualifying_products'] as $product_id ) {
 		// Use EDD All Access function to check if user has active pass for this product.
 		if ( edd_all_access_user_has_pass( $user_id, $product_id, 0, 'active' ) ) {
-			// If we're excluding a specific pass, we need to verify this isn't that pass.
-			if ( $exclude_pass_id > 0 ) {
-				// Get customer passes to check if this is the excluded one.
-				$passes = edd_rm_get_user_passes_for_product( $user_id, $product_id, $exclude_pass_id );
+			// If we're excluding a specific payment, we need to verify this isn't that pass.
+			if ( $exclude_payment_id > 0 ) {
+				// Get customer passes to check if there are OTHER passes for this product.
+				$passes = edd_rm_get_user_passes_for_product( $user_id, $product_id, $exclude_payment_id );
 				if ( ! empty( $passes ) ) {
 					return true;
 				}
@@ -343,14 +344,14 @@ function edd_rm_user_has_qualifying_all_access( int $user_id, int $exclude_pass_
 }
 
 /**
- * Get user's active All Access passes for a specific product, excluding a specific pass.
+ * Get user's active All Access passes for a specific product, excluding a specific payment.
  *
- * @param int $user_id         The user ID.
- * @param int $product_id      The product ID to check.
- * @param int $exclude_pass_id Pass ID to exclude.
- * @return EDD_All_Access_Pass[] Array of active passes (excluding the specified one).
+ * @param int $user_id            The user ID.
+ * @param int $product_id         The product ID to check.
+ * @param int $exclude_payment_id Payment ID to exclude (from the pass that just expired).
+ * @return array<int, array{payment_id: int, download_id: int, price_id: int}|EDD_All_Access_Pass> Array of active passes.
  */
-function edd_rm_get_user_passes_for_product( int $user_id, int $product_id, int $exclude_pass_id ): array {
+function edd_rm_get_user_passes_for_product( int $user_id, int $product_id, int $exclude_payment_id ): array {
 	if ( ! function_exists( 'edd_all_access_get_customer_passes' ) ) {
 		return array();
 	}
@@ -369,16 +370,18 @@ function edd_rm_get_user_passes_for_product( int $user_id, int $product_id, int 
 	$matching_passes = array();
 
 	foreach ( $passes as $pass ) {
-		// Skip the excluded pass.
-		if ( absint( $pass->id ?? 0 ) === $exclude_pass_id ) {
+		// Handle both array and object formats.
+		$pass_payment_id = is_array( $pass ) ? absint( $pass['payment_id'] ?? 0 ) : absint( $pass->payment_id ?? 0 );
+		$pass_product_id = is_array( $pass ) ? absint( $pass['download_id'] ?? 0 ) : absint( $pass->download_id ?? 0 );
+
+		// Skip the excluded pass (by payment ID since arrays don't have pass ID).
+		if ( $pass_payment_id === $exclude_payment_id ) {
 			continue;
 		}
 
-		// Check if this pass is for the product and is active.
-		$pass_product_id = absint( $pass->download_id ?? 0 );
-		$pass_status     = $pass->status ?? '';
-
-		if ( $pass_product_id === $product_id && 'active' === $pass_status ) {
+		// Check if this pass is for the product.
+		// Note: edd_all_access_get_customer_passes returns active passes only.
+		if ( $pass_product_id === $product_id ) {
 			$matching_passes[] = $pass;
 		}
 	}

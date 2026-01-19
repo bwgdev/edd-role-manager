@@ -23,3 +23,6 @@ parameters:
         - "#Offset 'id' on array\\{id: int.*always exists#"
         - '#Property EDD_Subscription::\$product_id.*on left side of \?\? is not nullable#'
         - '#Property EDD_All_Access_Pass::\$.*on left side of \?\? is not nullable#'
+        # Defensive code handles both array and object formats for All Access passes
+        - "#Offset '(payment_id|download_id)' on array\\{.*always exists#"
+        - '#Else branch is unreachable because ternary operator condition is always true#'
